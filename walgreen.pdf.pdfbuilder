@@ -1,0 +1,58 @@
+footer_text = @container_label.try(:location).try(:container_label_footer) || " "
+footer_data = [
+[@container_label.id, @container_label.created_at.to_s(:short), "#{footer_text}" ]
+]
+
+footer_table = PDF::Wrapper::Table.new do |t|
+t.data = footer_data
+t.col_options 0, :font_size => 6, :alignment => :left, :border => ''
+t.col_options 1, :font_size => 6, :border => '', :alignment => :center
+t.col_options 2, :font_size => 6, :alignment => :right, :border => ''
+# t.manual_col_width 0, 185
+# t.manual_col_width 1, 185
+end
+
+pdf.footer_height 15
+pdf.repeating_element(:all) do
+#pdf.line(pdf.margin_left, pdf.body_height - 10, pdf.body_width + 25, pdf.body_height - 10, { :line_width => 1, :color => :gray })
+pdf.table(footer_table, :left => pdf.margin_left, :top => pdf.body_height - 5)
+pdf.reset_cursor
+end
+
+if @container_label.corporation.try(:setting).try(:logo_path)
+pdf.image(@container_label.corporation.try(:setting).try(:logo_path), :left => 25, :top => 25)
+end
+pdf.font_size 8
+
+header_text = @container_label.try(:location).try(:container_label_header) || "\n\n"
+header_text.gsub!(/<br\s?\/?\s?>/i, "\n")
+
+pdf.cell(header_text, pdf.body_width - 180, 35, 160, 80, :border => '', :alignment => :right)
+pdf.line(pdf.margin_left, 110, pdf.body_width + 20, 110, { :line_width => 1, :color => :gray })
+pdf.move_down 20
+
+
+
+data = [
+  [ "Drug:", @container_label.drug_name,''],
+  ["Language:", @container_label.locale.name ,''],
+  ["#{@container_label.locale.name} Translation:", @container_label.try(:translation_token),''],
+  ["English Translation:", @container_label.try(:paraphrase_token) ,'']
+]
+
+table = PDF::Wrapper::Table.new() do |t|
+  t.data = data
+  t.col_options 0, :font_size => 8, :alignment => :left, :border => '', :markup => :pango
+  t.col_options 1, :font_size => 10,:alignment => :left, :border => ''
+  t.col_options 2, :font_size => 10,:alignment => :left, :border => ''
+  t.manual_col_width 0, 100
+  t.manual_col_width 1, 160
+ # t.manual_col_width 2, 287
+end
+
+pdf.table(table, :left => pdf.margin_left, :top => 112)
+pdf.line(pdf.margin_left, 398, pdf.body_width + 25, 398, { :line_width => 1, :color => :gray })
+
+#pdf.line(pdf.margin_left, 428, pdf.body_width + 25, 428, { :line_width => 1, :color => :gray })
+pdf.table(table, :left => pdf.margin_left, :top => 402)
+pdf.line(pdf.margin_left, 686, pdf.body_width + 25, 686, { :line_width => 1, :color => :gray })

@@ -1,0 +1,96 @@
+- turnaround_options = current_user.corporation.setting.turnaround_options
+
+#confirm.grid_12
+  %h1 New Container Label
+  %table
+    %tr
+      %th{:style => 'width: 25%;'} Drug
+      %td= @container_label.drug_name
+    %tr
+      %th Language
+      %td= @container_label.locale.name
+    %tr
+      %th SIG to Translate
+      - if @container_label.custom?
+        %td= @container_label.sig.token
+      - else
+        %td= @container_label.paraphrase.token
+
+.grid_12
+
+  - semantic_form_for @container_label do |form|
+    %ul
+      = form.input :drug_not_listed, :as => :hidden
+    #nonstandard
+      - if @container_label.custom?
+        %h2 This is a Custom Translation Request
+        - form.inputs do
+          - if turnaround_options.size > 1
+            = form.input :non_standard_request_time, :prompt => '[ select turn-around time ]', :as => :select, :collection => turnaround_options
+          - else
+            = form.input :non_standard_request_time, :as => :hidden, :value => turnaround_options.first
+          = form.input :non_standard_note, :required => false, :label => 'Special Notes', :as => :text
+
+    #reference
+      %h2 Reference Number
+      - form.inputs do
+        = form.input :reference
+
+    #pharmacist_name
+      %h2 Pharmacist Name
+      - form.inputs do
+        = form.input :pharmacist_name
+
+    - if !@container_label.location.corporation.name.downcase.include?('walgreens')
+      %h2 Auxiliary Warning Labels (CAUTIONS)
+      %input.filter{:style => 'display: hidden; float: right; margin-right: 10px;'}
+      %h4{:style => 'margin-bottom: 0; margin-left: 10px;'} Select Labels
+      #warning_pick_list
+        %ul
+          - @warnings.each do |warning|
+            - args_for_link = args_for_new_container_label_path_add_warning(@container_label, warning)
+            %li
+              = link_to "+ add", new_container_label_path(args_for_link), :id => "add_warning_#{warning.id}"
+              %span
+                = warning.token
+      %br
+      %h4{:style => 'margin-left: 10px; margin-bottom: 0;'} Currently Assigned Auxiliary Warning Labels (CAUTIONS):
+
+      - if @container_label.container_label_warnings.empty?
+        #no_warnings.notice{:style => 'margin: 10px;'} You haven't selected any yet.  Use the pick-list above if you wish to add warnings to this container label.
+
+      #current_warning_list
+        %ul
+          - @container_label.container_label_warnings.sort{|x,y| x.position <=> y.position}.each do |container_label_warning|
+            - warning = container_label_warning.warning
+            %li.ui-state-default{:id => "warning_label_#{warning.id}", :style => 'cursor: move;'}
+              %span{:class => "ui-icon ui-icon-arrowthick-2-n-s"}
+              - args_for_link = args_for_new_container_label_path_promote_container_label_warning(@container_label, container_label_warning)
+              = link_to "&uarr;", new_container_label_path(args_for_link), :class => 'upGlyph'
+
+              - args_for_link = args_for_new_container_label_path_demote_container_label_warning(@container_label, container_label_warning)
+              = link_to "&darr;", new_container_label_path(args_for_link), :class => 'downGlyph'
+
+              - args_for_link = args_for_new_container_label_path_remove_container_label_warning(@container_label, container_label_warning)
+              = link_to "x", new_container_label_path(args_for_link), :class => 'deleteGlyph'
+
+              %span{:class => 'warning'}
+                = warning.token
+                = hidden_field_tag 'container_label[container_label_warnings_attributes][][position]', container_label_warning.position, :id => "container_label_warning_#{container_label_warning.warning_id}_position"
+                = hidden_field_tag 'container_label[container_label_warnings_attributes][][warning_id]', container_label_warning.warning_id, :id => "container_label_warning_#{container_label_warning.warning_id}_id"
+    %ul{:style => 'display: none'}
+      = form.input :drug_name, :as => :hidden, :value => @container_label.drug_name, :wrapper_html => { :style => "display:none;" }
+      = form.input :drug_id, :as => :hidden, :wrapper_html => { :style => "display:none;" }
+      = form.input :locale_id, :as => :hidden,:wrapper_html => { :style => "display:none;" }
+      = form.input :sig_id, :as => :hidden,:wrapper_html => { :style => "display:none;" }
+      = form.input :paraphrase_id, :as => :hidden,:wrapper_html => { :style => "display:none;" }
+      = form.input :custom, :as => :hidden, :value => @container_label.custom,:wrapper_html => { :style => "display:none;" }
+      = form.input :user_id, :as => :hidden, :value => current_user.id,:wrapper_html => { :style => "display:none;" }
+      = form.input :location_id, :as => :hidden, :value => current_location.id,:wrapper_html => { :style => "display:none;" }
+
+    - if @container_label.custom?
+      - form.inputs do
+        =form.input :charge_for_custom_translation, :as => :boolean, :label => "I understand that by submitting this custom translation request, a charge will be incurred."
+
+    - form.buttons do
+      = form.commit_button "Submit"

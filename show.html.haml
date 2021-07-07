@@ -1,0 +1,85 @@
+.grid_12.container-label-show
+  %h1= "Container Label #{@container_label.reference}"
+
+  - if @container_label.custom?
+    %h3
+      This is a Custom Label submitted for translation on
+      = @container_label.created_at.to_s(:friendly_with_time)
+  - if @container_label.standard? || @container_label.non_standard_request.try(:approved?)
+    - if @container_label.downloaded?
+      = button_to "Open Printable Container Label", download_container_label_path(@container_label, :format=>'pdf'), :method => :put, :class => 'actionlink' # link_to "Open Printable Container Label", container_label_path(@container_label, :format=>'pdf'), :class => 'actionlink'
+    - else
+      = button_to "Open Printable Container Label", download_container_label_path(@container_label, :format=>'pdf'), :method => :put, :class => 'actionlink'
+
+  - if @patient_education_sheet_available
+    - if @container_label.patient_education_sheet
+      = button_to "Open Printable Patient Education Sheet", container_label_patient_education_sheet_path(@container_label, :format => 'pdf'), :method => :get, :class => 'actionlink'
+    - else
+      = button_to "Open Printable Patient Education Sheet", container_label_patient_education_sheet_path(@container_label, :format => 'pdf'), :method => :post, :class => 'actionlink'
+  - else
+    = button_to "Open Printable Patient Education Sheet", '#', :method => :get, :class => 'actionlink', :disabled => true
+
+  - unless @container_label.patient_education_sheet
+    - if !@patient_education_sheet_authorized
+      .actionlink-explanation Account not authorized for patient education sheets. Contact Sales to order.
+    - elsif !@patient_education_sheet_available
+      .actionlink-explanation Patient education sheet not available for this drug/language pair.
+
+  %dl
+    %dt Reference
+    %dd= @container_label.reference
+
+    %dt RxTran Tracking Number
+    %dd= @container_label.id
+
+    %dt Pharmacist Name
+    %dd= @container_label.pharmacist_name
+
+    %dt Drug
+    %dd= @container_label.drug_name
+
+    %dt Language
+    %dd= @container_label.locale.name
+
+    - if @container_label.custom?
+      %dt Requested SIG to Translate
+      %dd= @container_label.sig_token
+    - else
+      %dt SIG to Translate
+      %dd= @container_label.paraphrase_token
+
+    / Removed at least until we resolve #192
+    / %dt Translation
+    /     -if @container_label.translation
+    /       %dd= @container_label.translated_text
+    /     -else
+    /       %dd
+    /         not yet available
+    /         = " (requested #{@container_label.created_at.to_s(:friendly_with_time)})"
+
+    %dt Location
+    %dd= @container_label.location.name rescue nil
+
+    %dt Created By
+    %dd= @container_label.user.login rescue nil
+
+    %dt Created At
+    %dd= @container_label.created_at.to_s(:friendly_with_time)
+
+  - if !@container_label.location.corporation.name.downcase.include?('walgreens')
+    %h2 Auxiliary Warning Labels (CAUTIONS)
+
+    - if !@container_label.container_label_warnings.any?
+      %em
+        No Auxiliary Warning Labels (CAUTIONS)
+
+    %ol
+      - @container_label.container_label_warnings.each do |container_label_warning|
+        %li
+          %em
+            = container_label_warning.warning.token
+          / Removed at least until we resolve #192
+          / %br
+          / = warning.translation(@container_label.locale).translation rescue nil
+
+
